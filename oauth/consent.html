@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Jarvis</title>
+  <style>
+    :root {
+      --bg: #fbfaf7;
+      --ink: #23221f;
+      --muted: #6b6860;
+      --accent: #5f7f6b;
+      --accent-hover: #4e6a58;
+      --card-bg: #ffffff;
+      --border: #e8e6e1;
+      --error-bg: #fdf2f2;
+      --error-border: #f8b4b4;
+      --error-ink: #9b1c1c;
+      --btn-deny-bg: #eceae5;
+      --btn-deny-hover: #dfddd7;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161614;
+        --ink: #ecebe6;
+        --muted: #a29f96;
+        --accent: #9cc2a8;
+        --accent-hover: #b2d5bd;
+        --card-bg: #1f1f1c;
+        --border: #2e2e29;
+        --error-bg: #311c1c;
+        --error-border: #772b2b;
+        --error-ink: #f8b4b4;
+        --btn-deny-bg: #2b2a26;
+        --btn-deny-hover: #383732;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .header {
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .error-box {
+      display: none;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-ink);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--accent);
+    }
+
+    .scope-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+    }
+
+    .scope-box p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .scope-box .client-name {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .permission-notice {
+      font-size: 0.92rem;
+      color: var(--ink);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      flex: 1;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-allow {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-allow:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-deny {
+      background: var(--btn-deny-bg);
+      color: var(--ink);
+    }
+
+    .btn-deny:hover:not(:disabled) {
+      background: var(--btn-deny-hover);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Jarvis Authorization</h1>
+      <p>Connect your personal workspace to Claude</p>
+    </div>
+
+    <div id="error-box" class="error-box"></div>
+
+    <!-- Sign-in form (shown when user has no active session) -->
+    <div id="signin-card" class="card hidden">
+      <form id="signin-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="btn-signin" class="btn-submit">Sign In to Continue</button>
+      </form>
+    </div>
+
+    <!-- Consent form (shown when user is authenticated) -->
+    <div id="consent-card" class="card hidden">
+      <div class="scope-box">
+        <div id="client-name" class="client-name">Claude</div>
+        <p><strong>Requested scopes:</strong> <span id="client-scopes">Personal Intelligence Tools</span></p>
+      </div>
+
+      <div class="permission-notice">
+        Claude will be able to read your Jarvis plan, asks and projects, and add tasks, ideas and work-log entries. It cannot read your email or calendar.
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="btn-deny" class="btn-deny">Deny</button>
+        <button type="button" id="btn-allow" class="btn-allow">Allow</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration placeholders for the user to configure
+    const SUPABASE_URL = "https://vjerurokynxnsikmdugo.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZXJ1cm9reW54bnNpa21kdWdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNjI4ODcsImV4cCI6MjEwNzgzODg4N30.csMKwHhjiuqScbaLe-Co7nZnnrWKyk7djjI5dpFh7r8";
+
+    const errorBox = document.getElementById("error-box");
+    const signinCard = document.getElementById("signin-card");
+    const consentCard = document.getElementById("consent-card");
+    const signinForm = document.getElementById("signin-form");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const clientNameEl = document.getElementById("client-name");
+    const clientScopesEl = document.getElementById("client-scopes");
+    const btnAllow = document.getElementById("btn-allow");
+    const btnDeny = document.getElementById("btn-deny");
+    const btnSignin = document.getElementById("btn-signin");
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.style.display = "none";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const authId = params.get("authorization_id");
+
+    if (!authId) {
+      showError("Missing authorization_id in request. Please launch this authorization flow from your AI client.");
+    }
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadConsent() {
+      if (!authId) return;
+      clearError();
+      try {
+        const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authId);
+        if (error) {
+          showError(error.message || "Failed to retrieve authorization details.");
+          return;
+        }
+
+        // If it returns a redirect_url and no authorization id, redirect there
+        if (data && data.redirect_url && !data.id && !data.authorization_id) {
+          window.location.href = data.redirect_url;
+          return;
+        }
+
+        const clientName = data?.client?.client_name || data?.client_name || "Claude";
+        const scopes = Array.isArray(data?.scopes) ? data.scopes.join(", ") : (data?.scope || "read, write");
+
+        clientNameEl.textContent = clientName;
+        clientScopesEl.textContent = scopes;
+        consentCard.classList.remove("hidden");
+      } catch (err) {
+        showError(err.message || "Unexpected error retrieving authorization details.");
+      }
+    }
+
+    async function init() {
+      if (!authId) return;
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          signinCard.classList.remove("hidden");
+          consentCard.classList.add("hidden");
+        } else {
+          signinCard.classList.add("hidden");
+          await loadConsent();
+        }
+      } catch (err) {
+        showError(err.message || "Failed to check session.");
+      }
+    }
+
+    signinForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearError();
+      btnSignin.disabled = true;
+      try {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          showError(error.message || "Sign-in failed.");
+          btnSignin.disabled = false;
+          return;
+        }
+        signinCard.classList.add("hidden");
+        await loadConsent();
+      } catch (err) {
+        showError(err.message || "Sign-in failed.");
+        btnSignin.disabled = false;
+      }
+    });
+
+    btnAllow.addEventListener("click", async () => {
+      clearError();
+      btnAllow.disabled = true;
+      btnDeny.disabled = true;
+      try {
+        const { data, error } = await supabase.auth.oauth.approveAuthorization(authId);
+        if (error) {
+          showError(error.message || "Failed to approve authorization.");
+          btnAllow.disabled = false;
+          btnDeny.disabled = false;
+          return;
+        }
+        if (data && data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          showError("Authorization approved, but no redirect URL was returned.");
+        }
+      } catch (err) {
+        showError(err.message || "Failed to approve authorization.");
+        btnAllow.disabled = false;
+        btnDeny.disabled = false;
+      }
+    });
+
+    btnDeny.addEventListener("click", async () => {
+      clearError();
+      btnAllow.disabled = true;
+      btnDeny.disabled = true;
+      try {
+        const { data, error } = await supabase.auth.oauth.denyAuthorization(authId);
+        if (error) {
+          showError(error.message || "Failed to deny authorization.");
+          btnAllow.disabled = false;
+          btnDeny.disabled = false;
+          return;
+        }
+        if (data && data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          showError("Authorization denied, but no redirect URL was returned.");
+        }
+      } catch (err) {
+        showError(err.message || "Failed to deny authorization.");
+        btnAllow.disabled = false;
+        btnDeny.disabled = false;
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

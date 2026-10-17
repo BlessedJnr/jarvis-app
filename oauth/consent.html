@@ -284,13 +284,13 @@
       showError("Missing authorization_id in request. Please launch this authorization flow from your AI client.");
     }
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function loadConsent() {
       if (!authId) return;
       clearError();
       try {
-        const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authId);
+        const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authId);
         if (error) {
           showError(error.message || "Failed to retrieve authorization details.");
           return;
@@ -316,7 +316,7 @@
     async function init() {
       if (!authId) return;
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await sb.auth.getSession();
         if (error || !session) {
           signinCard.classList.remove("hidden");
           consentCard.classList.add("hidden");
@@ -336,7 +336,7 @@
       try {
         const email = emailInput.value.trim();
         const password = passwordInput.value;
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) {
           showError(error.message || "Sign-in failed.");
           btnSignin.disabled = false;
@@ -355,7 +355,7 @@
       btnAllow.disabled = true;
       btnDeny.disabled = true;
       try {
-        const { data, error } = await supabase.auth.oauth.approveAuthorization(authId);
+        const { data, error } = await sb.auth.oauth.approveAuthorization(authId);
         if (error) {
           showError(error.message || "Failed to approve authorization.");
           btnAllow.disabled = false;
@@ -379,7 +379,7 @@
       btnAllow.disabled = true;
       btnDeny.disabled = true;
       try {
-        const { data, error } = await supabase.auth.oauth.denyAuthorization(authId);
+        const { data, error } = await sb.auth.oauth.denyAuthorization(authId);
         if (error) {
           showError(error.message || "Failed to deny authorization.");
           btnAllow.disabled = false;
